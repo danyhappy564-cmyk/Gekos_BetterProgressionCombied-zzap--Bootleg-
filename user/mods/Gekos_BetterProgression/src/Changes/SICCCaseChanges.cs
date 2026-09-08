@@ -1,4 +1,5 @@
-﻿using SPTarkov.Server.Core.Models.Common;
+using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Common;
 
 namespace GekosBetterProgression.Changes;
 

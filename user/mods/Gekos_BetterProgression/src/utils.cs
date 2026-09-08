@@ -1,9 +1,10 @@
+using SPTarkov.Server.Core.Utils.Json;
 using GekosBetterProgression.AlgoRebalance;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.Hideout;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Spt.Server;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 using static GekosBetterProgression.AdvancedConfig;
 //using gekosbetterprogression.AlgoRebalancing.Types;
 
@@ -297,7 +298,7 @@ public static class Utils
 
     public static void ApplyAdditionalQuestRewards(Context context, AdditionalQuestRewards additionalQuestRewards)
     {
-        DatabaseTables tables = context.tables;
+        DatabaseTablesView tables = context.tables;
         var startedRewards = additionalQuestRewards.started;
         var successRewards = additionalQuestRewards.success;
 
@@ -345,7 +346,8 @@ public static class Utils
         {
             Type = RewardType.AssortmentUnlock,
             Index = rewards.Count,
-            TraderId = traderId,
+            // 4.1 widened Reward.TraderId to a string-or-int union.
+            TraderId = new StringOrInt(traderId, null),
             Target = targetId,
             Items = new()
             {

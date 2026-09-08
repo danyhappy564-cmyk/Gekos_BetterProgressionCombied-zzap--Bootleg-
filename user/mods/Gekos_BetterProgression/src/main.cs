@@ -1,14 +1,17 @@
+using System.Reflection;
+using GekosBetterProgression.AlgoRebalance;
+using GekosBetterProgression.Changes;
+using SPTarkov.Common.Models.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
+using SPTarkov.Server.Core.Helpers.Items;
+using SPTarkov.Server.Core.Helpers.Profile;
+using SPTarkov.Server.Core.Helpers.Server;
+using SPTarkov.Server.Core.Models.Spt.Config;
 using SPTarkov.Server.Core.Models.Spt.Mod;
-using SPTarkov.Server.Core.Models.Utils;
-using SPTarkov.Server.Core.Helpers;
-using System.Reflection;
-using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Servers;
+using SPTarkov.Server.Core.Models.Spt.Tables;
+using SPTarkov.Server.Core.Services.Locales;
 using SPTarkov.Server.Core.Utils;
-using GekosBetterProgression.Changes;
-using GekosBetterProgression.AlgoRebalance;
 
 namespace GekosBetterProgression;
 
@@ -20,7 +23,7 @@ namespace GekosBetterProgression;
 /// All properties must be overriden, properties you don't use may be left null.
 /// It is read by the mod loader when this mod is loaded.
 /// </summary>
-public record ModMetadata : AbstractModMetadata
+public record ModMetadata : IModMetadata
 {
     /// <summary>
     /// Any string can be used for a modId, but it should ideally be unique and not easily duplicated
@@ -28,74 +31,74 @@ public record ModMetadata : AbstractModMetadata
     /// It is recommended (but not mandatory) to use the reverse domain name notation,
     /// see: https://docs.oracle.com/javase/tutorial/java/package/namingpkgs.html
     /// </summary>
-    public override string ModGuid { get; init; } = "com.geko.gekosbetterprogression";
+    public string ModGuid { get; init; } = "com.geko.gekosbetterprogression";
 
     /// <summary>
     /// The name of your mod
     /// </summary>
-    public override string Name { get; init; } = "Geko's Better Progression";
+    public string Name { get; init; } = "Geko's Better Progression";
 
     /// <summary>
     /// Who created the mod (you!)
     /// </summary>
-    public override string Author { get; init; } = "DrunkGeko";
+    public string Author { get; init; } = "DrunkGeko";
 
     /// <summary>
     /// A list of people who helped you create the mod
     /// </summary>
-    public override List<string>? Contributors { get; init; } = ["marbL-"];
+    public List<string>? Contributors { get; init; } = ["marbL-"];
 
     /// <summary>
     ///  The version of the mod, follows SEMVER rules (https://semver.org/)
     /// </summary>
-    public override SemanticVersioning.Version Version { get; init; } = new("2.0.2");
+    public SemanticVersioning.Version Version { get; init; } = new("3.0.0");
 
     /// <summary>
     /// What version of SPT is your mod made for, follows SEMVER rules (https://semver.org/)
     /// </summary>
-    public override SemanticVersioning.Range SptVersion { get; init; } = new("~4.0.0");
+    public SemanticVersioning.Range SptVersion { get; init; } = new("~4.1.0");
 
     /// <summary>
     /// ModIds that you know cause problems with your mod
     /// </summary>
-    public override List<string>? Incompatibilities { get; init; }
+    public List<string>? Incompatibilities { get; init; }
 
     /// <summary>
     /// ModIds your mod REQUIRES to function
     /// </summary>
-    public override Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
+    public Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
 
     /// <summary>
     /// Where to find your mod online
     /// </summary>
-    public override string? Url { get; init; } = "https://forge.sp-tarkov.com/mod/2088/gekos-better-progression";
-
-    /// <summary>
-    /// Does your mod load bundles? (e.g. new weapon/armor mods)
-    /// </summary>
-    public override bool? IsBundleMod { get; init; } = false;
+    public string? Url { get; init; } = "https://forge.sp-tarkov.com/mod/2088/gekos-better-progression";
 
     /// <summary>
     /// What Licence does your mod use
     /// </summary>
-    public override string License { get; init; } = "MIT";
+    public string License { get; init; } = "MIT";
+
+    /// <summary>
+    /// New in 4.1: the loader needs to know whether to look for a prepatcher. This mod has none.
+    /// </summary>
+    public bool HasPrepatcher { get; init; } = false;
 }
 
 // We want to load after PreSptModLoader is complete, so we set our type priority to that, plus 1.
-[Injectable(TypePriority = OnLoadOrder.PreSptModLoader + 1)]
+[Injectable(TypePriority = OnLoadOrder.Preload + 1)]
 public class PreSPTLoader(
         ISptLogger<PreSPTLoader> logger,
         ItemHelper itemHelper,
         PresetHelper presetHelper,
         ProfileHelper profileHelper,
-        ConfigServer configServer,
+        QuestConfig questConfig,
         HashUtil hashUtil,
         ModHelper modHelper,
         Context context
     ) // We inject a logger for use inside our class, it must have the class inside the diamond <> brackets
     : IOnLoad // Implement the IOnLoad interface so that this mod can do something on server load
 {
-    public Task OnLoad()
+    public Task OnLoadAsync(CancellationToken cancellationToken = default)
     {
 
         var pathToMod = modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
@@ -105,7 +108,7 @@ public class PreSPTLoader(
 
         var logWrapper = new LoggerWrapper<PreSPTLoader>(logger);
 
-        context.PreInitialize(itemHelper, presetHelper, profileHelper, configServer, hashUtil, config, advancedConfig, logWrapper);
+        context.PreInitialize(itemHelper, presetHelper, profileHelper, questConfig, hashUtil, config, advancedConfig, logWrapper);
 
         return Task.CompletedTask;
     }
@@ -116,14 +119,17 @@ public class PreSPTLoader(
 public class PostDBLoader(
     Context context,
     ISptLogger<PostDBLoader> logger,
-        DatabaseService databaseService,
-        DatabaseServer databaseServer,
+        TemplateTable templateTable,
+        TradersTable tradersTable,
+        HideoutTable hideoutTable,
+        GlobalTable globalTable,
+        LocaleTable localeTable,
         LocaleService localeService
 )
     : IOnLoad // Implement the `IOnLoad` interface so that this mod can do something
 {
 
-    public Task OnLoad()
+    public Task OnLoadAsync(CancellationToken cancellationToken = default)
     {
         if (!context.IsInitialized)
         {
@@ -132,7 +138,10 @@ public class PostDBLoader(
 
         var logWrapper = new LoggerWrapper<PostDBLoader>(logger);
 
-        context.PostInitialize(databaseService, databaseServer, databaseService.GetTables(), logWrapper, localeService);
+        context.PostInitialize(
+            new DatabaseTablesView(templateTable, tradersTable, hideoutTable, globalTable, localeTable),
+            logWrapper,
+            localeService);
 
         ApplyPostDBChanges(context);
 

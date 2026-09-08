@@ -1,31 +1,38 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>GekosBetterProgression</RootNamespace>
+    <AssemblyName>GekosBetterProgression</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <Version>3.0.0</Version>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SPTushonka.Common" Version="4.1.5" />
+    <PackageReference Include="SPTushonka.DI" Version="4.1.5" />
+    <PackageReference Include="SPTushonka.Reflection" Version="4.1.5" />
+    <PackageReference Include="SPTushonka.Server.Core" Version="4.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.json5" CopyToOutputDirectory="Always" />
+    <None Update="advancedConfig.json5" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+  <!-- Drop the built mod straight into the server's user\mods folder. -->
+  <Target Name="DeployToSpt" AfterTargets="Build" Condition=" '$(DeployToSpt)' != 'false' AND Exists('$(SptRoot)') ">
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <RootNamespace>GekosBetterProgression</RootNamespace>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <OutputType>Library</OutputType>
-        <Version>0.0.1</Version>
-        <!-- The two lines below will set the output path for the binaries -->
-        <OutputPath>bin\$(Configuration)\$(ProjectName)\$(AssemblyName)\</OutputPath>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+      <SptModDir>$(SptRoot)\SPT\user\mods\Gekos_BetterProgression\</SptModDir>
     </PropertyGroup>
-
     <ItemGroup>
-        <PackageReference Include="SPTarkov.Common" Version="4.0.0" />
-        <PackageReference Include="SPTarkov.DI" Version="4.0.0" />
-        <PackageReference Include="SPTarkov.Reflection" Version="4.0.0" />
-        <PackageReference Include="SPTarkov.Server.Core" Version="4.0.0" />
+      <DeployFiles Include="$(TargetDir)**\*.*" />
     </ItemGroup>
-
-    <ItemGroup>
-        <None Update="config.json5">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="advancedConfig.json5">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
+    <Copy SourceFiles="@(DeployFiles)" DestinationFiles="@(DeployFiles->'$(SptModDir)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(AssemblyName) to $(SptModDir)" />
+  </Target>
 
 </Project>

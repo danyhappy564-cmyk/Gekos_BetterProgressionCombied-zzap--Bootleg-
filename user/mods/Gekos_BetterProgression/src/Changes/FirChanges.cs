@@ -1,4 +1,4 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Eft.Hideout;
 using System.Text.RegularExpressions;
 using SPTarkov.Server.Core.Models.Spt.Config;
@@ -101,7 +101,7 @@ public class FirChanges
 
     public static bool RemoveFirFromRepeatables(Context context)
     {
-        var questConfig = context.sptConfig.GetConfig<QuestConfig>();
+        var questConfig = context.questConfig;
 
         if (questConfig?.RepeatableQuests == null)
         {

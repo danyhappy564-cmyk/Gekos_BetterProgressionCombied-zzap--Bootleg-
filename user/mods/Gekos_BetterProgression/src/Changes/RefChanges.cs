@@ -4,7 +4,7 @@ using SPTarkov.Server.Core.Models.Enums;
 using System.Reflection;
 using SPTarkov.Server.Core.Controllers;
 using SPTarkov.Server.Core.Models.Eft.Game;
-using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Services.InRaid;
 using SPTarkov.Server.Core.Models.Eft.Match;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Helpers;
@@ -72,18 +72,33 @@ public class GainRefRepOnKillPatch() : AbstractPatch
 
     protected override MethodBase GetTargetMethod()
     {
-        return typeof(LocationLifecycleService).GetMethod(nameof(LocationLifecycleService.EndLocalRaid));
+        return typeof(LocationLifecycleService).GetMethod(nameof(LocationLifecycleService.EndLocalRaidAsync));
     }
 
+    /// <summary>
+    /// 4.1 made raid-end async. A plain postfix would run the moment the Task is handed back,
+    /// which is before the raid results have been written into the profile, so we replace the
+    /// returned Task with one that awards the standing after the original finishes. The caller
+    /// awaits our task, so the response still waits for the standing to land.
+    /// </summary>
     [PatchPostfix]
-    static void Postfix(MongoId sessionId, EndLocalRaidRequestData request)
+    static void Postfix(ref Task __result, MongoId sessionId, EndLocalRaidRequestData request)
     {
+        __result = AwardAfter(__result, sessionId, request);
+    }
+
+    private static async Task AwardAfter(Task original, MongoId sessionId, EndLocalRaidRequestData request)
+    {
+        await original;
+
         string[] validKilledSides = new string[] { Sides.PmcUsec, Sides.PmcBear };
         IEnumerable<Victim> pmcKills = request.Results.Profile.Stats.Eft.Victims.Where((victim) => validKilledSides.Contains(victim.Role));
 
         SptProfile fullProfile = context.profileHelper.GetFullProfile(sessionId);
-        fullProfile.CharacterData.PmcData.TradersInfo["6617beeaa9cfa777ca915b7c"].Standing += RepByKills(context, pmcKills);
+        fullProfile.CharacterData.PmcData.TradersInfo[RefChanges.REF_TRADER_ID].Standing += RepByKills(context, pmcKills);
     }
+
+
 
     private static double RepByKills(Context context, IEnumerable<Victim> victims)
     {

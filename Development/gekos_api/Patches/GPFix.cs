@@ -1,4 +1,4 @@
-﻿using EFT;
+using EFT;
 using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
 using HarmonyLib;
@@ -28,7 +28,7 @@ namespace gekos_api.Patches
         [PatchPostfix]
         static void Postfix(ref TradingItemView __instance)
         {
-            TextMeshProUGUI currency = (TextMeshProUGUI)typeof(TradingItemView).GetField("_currency", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
+            TextMeshProUGUI currency = (TextMeshProUGUI)typeof(TradingItemView).GetField("_currency", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
             if (currency == null) return;
 
             bool missingAsset = gpAsset == null;

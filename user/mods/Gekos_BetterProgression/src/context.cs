@@ -1,29 +1,44 @@
-using SPTarkov.Server.Core.Helpers;
-using SPTarkov.Server.Core.Models.Spt.Server;
-using SPTarkov.Server.Core.Servers;
-using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Utils;
 using SPTarkov.DI.Annotations;
+using SPTarkov.Server.Core.Helpers.Items;
+using SPTarkov.Server.Core.Helpers.Profile;
+using SPTarkov.Server.Core.Models.Spt.Config;
+using SPTarkov.Server.Core.Models.Spt.Tables;
+using SPTarkov.Server.Core.Services.Locales;
+using SPTarkov.Server.Core.Utils;
 
 namespace GekosBetterProgression;
+
+/// <summary>
+/// SPT 4.1 dissolved <c>DatabaseTables</c> into one injectable record per table. This keeps the
+/// old <c>tables.Something</c> shape so every change script still reads the way it did on 4.0.
+/// </summary>
+public sealed class DatabaseTablesView(
+    TemplateTable templates,
+    TradersTable traders,
+    HideoutTable hideout,
+    GlobalTable globals,
+    LocaleTable locales)
+{
+    public TemplateTable Templates { get; } = templates;
+    public TradersTable Traders { get; } = traders;
+    public HideoutTable Hideout { get; } = hideout;
+    public GlobalTable Globals { get; } = globals;
+    public LocaleTable Locales { get; } = locales;
+}
 
 [Injectable]
 public class Context
 {
-    
-    public DatabaseService databaseService;
-    public DatabaseServer databaseServer;
-    public DatabaseTables tables;
-    public ItemHelper itemHelper;
-    public PresetHelper presetHelper;
-    public ProfileHelper profileHelper;
-    public ConfigServer sptConfig;
-    public HashUtil hashUtil;
-    public GekoConfig config;
-    public AdvancedConfig advancedConfig;
-    public ILoggerWrapper logger;
-    public LocaleService localeService;
-
+    public DatabaseTablesView tables = null!;
+    public ItemHelper itemHelper = null!;
+    public PresetHelper presetHelper = null!;
+    public ProfileHelper profileHelper = null!;
+    public QuestConfig questConfig = null!;
+    public HashUtil hashUtil = null!;
+    public GekoConfig config = null!;
+    public AdvancedConfig advancedConfig = null!;
+    public ILoggerWrapper logger = null!;
+    public LocaleService localeService = null!;
 
     public bool IsInitialized => config != null;
 
@@ -31,7 +46,7 @@ public class Context
         ItemHelper _itemHelper,
         PresetHelper _presetHelper,
         ProfileHelper _profileHelper,
-        ConfigServer _sptConfig,
+        QuestConfig _questConfig,
         HashUtil _hashUtil,
         GekoConfig _config,
         AdvancedConfig _advancedConfig,
@@ -41,7 +56,7 @@ public class Context
         this.itemHelper = _itemHelper;
         this.presetHelper = _presetHelper;
         this.profileHelper = _profileHelper;
-        this.sptConfig = _sptConfig;
+        this.questConfig = _questConfig;
         this.hashUtil = _hashUtil;
         this.config = _config;
         this.advancedConfig = _advancedConfig;
@@ -49,18 +64,13 @@ public class Context
     }
 
     public void PostInitialize(
-        DatabaseService _databaseService,
-        DatabaseServer _databaseServer,
-        DatabaseTables _tables,
+        DatabaseTablesView _tables,
         ILoggerWrapper _logger,
         LocaleService _localeService
     )
     {
-        this.databaseService = _databaseService;
-        this.databaseServer = _databaseServer;
         this.tables = _tables;
         this.logger = _logger;
         this.localeService = _localeService;
     }
-
 }

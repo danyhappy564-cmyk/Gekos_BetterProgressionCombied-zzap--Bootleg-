@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Logging;
 using System;
 using System.Collections.Generic;
@@ -58,7 +58,7 @@ namespace gekos_api
                 new BaseProgressFix().Enable();
                 new ProgressValueFix().Enable();
                 new OnTriggerFix().Enable();
-                new Method4Fix().Enable();
+                new LobbyExpFix().Enable();
                 new LevelProgressFix().Enable();
             }
 

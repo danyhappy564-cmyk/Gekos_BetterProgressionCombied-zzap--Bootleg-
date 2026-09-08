@@ -1,4 +1,4 @@
-﻿using EFT;
+using EFT;
 using EFT.UI;
 using gekos_api.Helpers;
 using HarmonyLib;
@@ -31,7 +31,7 @@ namespace gekos_api.Patches
 
         static SkillButtons()
         {
-            buttonsPrefab = Utils.LoadGameObject("skillsbutton.bundle", "Buttons Panel");
+            buttonsPrefab = GekoUtils.LoadGameObject("skillsbutton.bundle", "Buttons Panel");
             config = ConfigHandler.GetPointsConfig();
             upButtons = new Dictionary<ESkillId, GameObject>();
             downButtons = new Dictionary<ESkillId, GameObject>();
@@ -43,7 +43,7 @@ namespace gekos_api.Patches
         }
 
         [PatchPostfix]
-        static void Postfix(ref SkillIcon __instance, SkillClass skill)
+        static void Postfix(ref SkillIcon __instance, Skill skill)
         {
             if (!config.enable) return;
 
@@ -109,7 +109,7 @@ namespace gekos_api.Patches
 
                 bool enableButton = AdditionalSkillLevels.GetAvailableSkillPoints() > 0;
 
-                if (Utils.GetPlayerProfile().Skills.TryGetSkill(up.Key, out SkillClass skill))
+                if (GekoUtils.GetPlayerProfile().Skills.TryGetSkill(up.Key, out Skill skill))
                 {
                     if (skill.Level >= 51) enableButton = false;
                 }
@@ -123,7 +123,7 @@ namespace gekos_api.Patches
 
                 bool enableButton = config.enableDeallocation;
 
-                if (Utils.GetPlayerProfile().Skills.TryGetSkill(down.Key, out SkillClass skill))
+                if (GekoUtils.GetPlayerProfile().Skills.TryGetSkill(down.Key, out Skill skill))
                 {
                     if (skill.Level <= 0) enableButton = false;
                 }
@@ -136,7 +136,7 @@ namespace gekos_api.Patches
         {
             bool res = AdditionalSkillLevels.TryDeltaLevels(skillId, delta);
             if (res) {
-                panel.method_1(); //Update visuals of the panel
+                panel.OnSkillLevelChanged(); //Update visuals of the panel
                 UpdateSkillLevel(icon);
                 UpdateButtonsVisibility();
             }
@@ -145,22 +145,22 @@ namespace gekos_api.Patches
         private static void UpdateSkillLevel(SkillIcon icon)
         {
             // Get the private fields thanks to reflections
-            FieldInfo levelPanelField = typeof(SkillIcon).GetField("_levelPanel", BindingFlags.NonPublic | BindingFlags.Instance);
-            FieldInfo skillClassField = typeof(SkillIcon).GetField("skillClass", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo levelPanelField = typeof(SkillIcon).GetField("_levelPanel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo skillField = typeof(SkillIcon).GetField("_skill", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (levelPanelField != null && skillClassField != null)
+            if (levelPanelField != null && skillField != null)
             {
                 SkillLevelPanel levelPanel = (SkillLevelPanel)levelPanelField.GetValue(icon);
-                SkillClass skillClass = (SkillClass)skillClassField.GetValue(icon);
+                Skill skill = (Skill)skillField.GetValue(icon);
 
-                if (levelPanel != null && skillClass != null)
+                if (levelPanel != null && skill != null)
                 {
-                    levelPanel.SetLevel(skillClass);
+                    levelPanel.SetLevel(skill);
                 }
             }
             else
             {
-                Debug.LogError("Reflection failed: Could not find _levelPanel or skillClass");
+                Debug.LogError("Reflection failed: Could not find _levelPanel or _skill");
             }
         }
 
