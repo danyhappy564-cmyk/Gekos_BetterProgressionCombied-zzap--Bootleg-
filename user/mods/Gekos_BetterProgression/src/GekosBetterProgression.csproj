@@ -26,7 +26,7 @@
   <!-- Drop the built mod straight into the server's user\mods folder. -->
   <Target Name="DeployToSpt" AfterTargets="Build" Condition=" '$(DeployToSpt)' != 'false' AND Exists('$(SptRoot)') ">
     <PropertyGroup>
-      <SptModDir>$(SptRoot)\SPT\user\mods\Gekos_BetterProgression\</SptModDir>
+      <SptModDir>$(SptRoot)\SPT_Runtime\user\mods\Gekos_BetterProgression\</SptModDir>
     </PropertyGroup>
     <ItemGroup>
       <DeployFiles Include="$(TargetDir)**\*.*" />
