@@ -1,4 +1,4 @@
-﻿using EFT.UI;
+using EFT.UI;
 using gekos_api.Helpers;
 using HarmonyLib;
 using SPT.Reflection.Patching;

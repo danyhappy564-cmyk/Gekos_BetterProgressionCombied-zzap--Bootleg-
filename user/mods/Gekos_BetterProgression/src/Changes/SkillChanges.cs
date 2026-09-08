@@ -1,4 +1,6 @@
-﻿namespace GekosBetterProgression.Changes;
+using SPTarkov.Server.Core.Models.Spt.Tables;
+
+namespace GekosBetterProgression.Changes;
 
 public class SkillChanges()
 {
@@ -6,7 +8,7 @@ public class SkillChanges()
     {
         var skillConfig = context.config.skillChanges;
 
-        SPTarkov.Server.Core.Models.Eft.Common.Config eftConfig = context.databaseService.GetGlobals().Configuration;
+        GlobalConfig eftConfig = context.tables.Globals.Configuration;
         eftConfig.SkillFreshEffectiveness = skillConfig.skillFreshEffectiveness;
         eftConfig.SkillFreshPoints = skillConfig.skillFreshPoints;
         eftConfig.SkillPointsBeforeFatigue = skillConfig.skillPointsBeforeFatigue;

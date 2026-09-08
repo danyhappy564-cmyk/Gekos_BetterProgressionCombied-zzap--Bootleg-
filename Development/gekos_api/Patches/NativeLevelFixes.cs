@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+using EFT;
+using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.PropertyGetter(typeof(SkillClass), nameof(SkillClass.LevelExp));
+            return AccessTools.PropertyGetter(typeof(Skill), nameof(Skill.LevelExp));
         }
 
         [PatchPrefix]
@@ -35,7 +36,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(SkillClass), nameof(SkillClass.CalculateExpOnFirstLevels));
+            return AccessTools.Method(typeof(Skill), nameof(Skill.CalculateExpOnFirstLevels));
         }
 
         [PatchPrefix]
@@ -56,7 +57,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.PropertyGetter(typeof(SkillClass), nameof(SkillClass.BaseProgress));
+            return AccessTools.PropertyGetter(typeof(Skill), nameof(Skill.BaseProgress));
         }
 
         [PatchPrefix]
@@ -77,7 +78,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.PropertyGetter(typeof(SkillClass), nameof(SkillClass.ProgressValue));
+            return AccessTools.PropertyGetter(typeof(Skill), nameof(Skill.ProgressValue));
         }
 
         [PatchPrefix]
@@ -98,7 +99,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(SkillClass), nameof(SkillClass.OnTrigger));
+            return AccessTools.Method(typeof(Skill), nameof(Skill.OnTrigger));
         }
 
         [PatchPrefix]
@@ -115,11 +116,11 @@ namespace gekos_api.Patches
         }
     }
 
-    class Method4Fix : ModulePatch
+    class LobbyExpFix : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(SkillClass), nameof(SkillClass.method_4));
+            return AccessTools.Method(typeof(Skill), nameof(Skill.CalculateRealEarnedExpForLobby));
         }
 
         [PatchPrefix]
@@ -140,7 +141,7 @@ namespace gekos_api.Patches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.PropertyGetter(typeof(SkillClass), nameof(SkillClass.LevelProgress));
+            return AccessTools.PropertyGetter(typeof(Skill), nameof(Skill.LevelProgress));
         }
 
         [PatchPrefix]

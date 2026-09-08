@@ -1,13 +1,9 @@
-﻿using EFT;
+using EFT;
 using gekos_api.Helpers;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace gekos_api.Patches
 {
@@ -21,49 +17,59 @@ namespace gekos_api.Patches
         }
     }
 
-    //Base class to minimize duplication. Cannot do the patch directly because of Harmony limitations
+    /// <summary>
+    /// Skill buff values are produced by four little closures inside
+    /// <see cref="SkillManager.FloatBuff"/> — one per rule kind (PerLevel, Max, Custom, Elite).
+    /// Each stores the buff it belongs to plus its captured argument, and its method_0 is the
+    /// rule body that writes <c>FloatBuff.Value</c>. We postfix each one and scale what it wrote.
+    ///
+    /// <para>On SPT 4.0 these were obfuscated as Class1425..Class1428; 4.1 deobfuscates them to
+    /// CG_PerLevel / CG_Max / CG_Custom / CG_Elite, and renames their captured-this field from
+    /// "SkillBuffClass" to "FloatBuff".</para>
+    ///
+    /// <para>Harmony cannot patch a generic base directly, so each rule kind still needs its own
+    /// concrete subclass.</para>
+    /// </summary>
     public abstract class SkillBuffMultiBase<T> : ModulePatch where T : class
     {
         static readonly SkillsConfig skillsConfig;
+
+        /// <summary>The closure's captured "this" — the buff whose Value the rule just set.</summary>
+        static readonly FieldInfo BuffField =
+            AccessTools.Field(typeof(T), "FloatBuff");
 
         static SkillBuffMultiBase()
         {
             skillsConfig = ConfigHandler.GetSkillsConfig();
         }
 
-        // Each derived class calls this to get the correct target method
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(T), "method_0");
         }
 
-        // Shared logic for adjusting the skill buff
         protected static void DoPostfix(ref T __instance)
         {
             try
             {
-                // Try to get the field using Harmony's AccessTools
-                var fieldInfo = AccessTools.Field(typeof(T), "SkillBuffClass");
-                if (fieldInfo == null)
+                if (BuffField == null)
                 {
-                    Plugin.LogSource.LogWarning($"Could not find field 'skillBuffClass' in type {typeof(T).Name}.");
-                    return;
-                }
-                // Retrieve the field value
-                dynamic buffClass = fieldInfo.GetValue(__instance);
-
-                EBuffId? skillBuff = buffClass?.Id;
-                if (skillBuff == null)
-                {
-                    Plugin.LogSource.LogWarning("Null skill buff (or no ID)!");
+                    Plugin.LogSource.LogWarning($"Could not find field 'FloatBuff' in type {typeof(T).Name}.");
                     return;
                 }
 
-                if (skillsConfig.BuffMultis.TryGetValue(skillBuff.ToString(), out float multi))
+                if (!(BuffField.GetValue(__instance) is SkillManager.FloatBuff buff))
                 {
-                    buffClass.Value *= multi;
+                    Plugin.LogSource.LogWarning("Null skill buff!");
+                    return;
                 }
-            } catch (Exception e)
+
+                if (skillsConfig.BuffMultis.TryGetValue(buff.Id.ToString(), out float multi))
+                {
+                    buff.Value *= multi;
+                }
+            }
+            catch (Exception e)
             {
                 Plugin.LogSource.LogError("Something went wrong when trying to apply skill buff multipliers! Double check that the config is setup correctly!");
                 Plugin.LogSource.LogError(e);
@@ -71,40 +77,27 @@ namespace gekos_api.Patches
         }
     }
 
-    // Actual classes
-    public class SkillBuffMulti1 : SkillBuffMultiBase<SkillManager.SkillBuffClass.Class1425>
+    public class SkillBuffMulti1 : SkillBuffMultiBase<SkillManager.FloatBuff.CG_PerLevel>
     {
         [PatchPostfix]
-        public static void Postfix(ref SkillManager.SkillBuffClass.Class1425 __instance)
-        {
-            DoPostfix(ref __instance);
-        }
+        public static void Postfix(ref SkillManager.FloatBuff.CG_PerLevel __instance) => DoPostfix(ref __instance);
     }
 
-    public class SkillBuffMulti2 : SkillBuffMultiBase<SkillManager.SkillBuffClass.Class1426>
+    public class SkillBuffMulti2 : SkillBuffMultiBase<SkillManager.FloatBuff.CG_Max>
     {
         [PatchPostfix]
-        public static void Postfix(ref SkillManager.SkillBuffClass.Class1426 __instance)
-        {
-            DoPostfix(ref __instance);
-        }
+        public static void Postfix(ref SkillManager.FloatBuff.CG_Max __instance) => DoPostfix(ref __instance);
     }
 
-    public class SkillBuffMulti3 : SkillBuffMultiBase<SkillManager.SkillBuffClass.Class1427>
+    public class SkillBuffMulti3 : SkillBuffMultiBase<SkillManager.FloatBuff.CG_Custom>
     {
         [PatchPostfix]
-        public static void Postfix(ref SkillManager.SkillBuffClass.Class1427 __instance)
-        {
-            DoPostfix(ref __instance);
-        }
+        public static void Postfix(ref SkillManager.FloatBuff.CG_Custom __instance) => DoPostfix(ref __instance);
     }
 
-    public class SkillBuffMulti4 : SkillBuffMultiBase<SkillManager.SkillBuffClass.Class1428>
+    public class SkillBuffMulti4 : SkillBuffMultiBase<SkillManager.FloatBuff.CG_Elite>
     {
         [PatchPostfix]
-        public static void Postfix(ref SkillManager.SkillBuffClass.Class1428 __instance)
-        {
-            DoPostfix(ref __instance);
-        }
+        public static void Postfix(ref SkillManager.FloatBuff.CG_Elite __instance) => DoPostfix(ref __instance);
     }
 }

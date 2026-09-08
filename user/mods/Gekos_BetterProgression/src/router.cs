@@ -13,10 +13,10 @@ namespace GekosBetterProgression
     [Injectable]
     public class Router(JsonUtil jsonUtil, Callbacks callbacks) : StaticRouter(jsonUtil, [
             new RouteAction<EmptyRequestData>(
-                "/server-config-router/skillpoints", async (_, _, _, _) => await callbacks.HandleGetSkillPointConfig()
+                "/server-config-router/skillpoints", async (_, _, _, _, _) => await callbacks.HandleGetSkillPointConfig()
             ),
             new RouteAction<EmptyRequestData>(
-                "/server-config-router/skillsconfig", async (_, _, _, _) => await callbacks.HandleGetSkillsConfig()
+                "/server-config-router/skillsconfig", async (_, _, _, _, _) => await callbacks.HandleGetSkillsConfig()
             )
         ])
     { }

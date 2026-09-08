@@ -1,4 +1,5 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Hideout;
+using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Eft.Hideout;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 
 namespace GekosBetterProgression.Changes;

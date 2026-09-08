@@ -1,4 +1,4 @@
-﻿using EFT;
+using EFT;
 using SPT.Reflection.Utils;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace gekos_api.Helpers
 {
-    class Utils
+    class GekoUtils
     {
 
         public static AssetBundle LoadBundle(string name)

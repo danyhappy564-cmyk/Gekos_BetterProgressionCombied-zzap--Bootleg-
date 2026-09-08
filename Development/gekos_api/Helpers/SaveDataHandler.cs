@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +45,7 @@ namespace gekos_api.Helpers
                 oldData = new Dictionary<string, T>();
             }
 
-            oldData[Utils.GetPlayerProfile().AccountId] = data;
+            oldData[GekoUtils.GetPlayerProfile().AccountId] = data;
 
             SaveAllData(fileName, oldData);
         }
@@ -61,7 +61,7 @@ namespace gekos_api.Helpers
         {
             try
             {
-                data = LoadAllData<Dictionary<string, T>>(fileName)[Utils.GetPlayerProfile().AccountId];
+                data = LoadAllData<Dictionary<string, T>>(fileName)[GekoUtils.GetPlayerProfile().AccountId];
                 return true;
             } catch (Exception ex) when (ex is KeyNotFoundException || ex is FileNotFoundException)
             {
