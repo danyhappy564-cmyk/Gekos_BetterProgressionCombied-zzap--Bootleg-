@@ -26,7 +26,16 @@ public sealed class DatabaseTablesView(
     public LocaleTable Locales { get; } = locales;
 }
 
-[Injectable]
+/// <summary>
+/// Shared between <c>PreSPTLoader</c> and <c>PostDBLoader</c>, so it MUST be a singleton.
+///
+/// <para>SPT 4.0's <c>[Injectable]</c> defaulted to <see cref="InjectionType.Scoped"/>, which
+/// during startup meant one shared instance. 4.1 changed the default to
+/// <see cref="InjectionType.Transient"/> — every injection site gets its own object — so a bare
+/// <c>[Injectable]</c> here hands PostDBLoader a blank Context and the server dies on
+/// "Context was not initialized!".</para>
+/// </summary>
+[Injectable(InjectionType.Singleton)]
 public class Context
 {
     public DatabaseTablesView tables = null!;

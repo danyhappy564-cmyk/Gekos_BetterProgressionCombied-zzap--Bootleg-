@@ -21,6 +21,7 @@ namespace GekosBetterProgression
         ])
     { }
 
+    // Reads Context, which is a singleton, so this can stay transient.
     [Injectable]
     public class Callbacks(JsonUtil jsonUtil, HttpResponseUtil httpResponseUtil, Context context)
     {

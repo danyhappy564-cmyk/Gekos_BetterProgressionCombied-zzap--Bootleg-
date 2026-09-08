@@ -133,7 +133,7 @@ public class PostDBLoader(
     {
         if (!context.IsInitialized)
         {
-            throw new Exception("Context was not initialized!");
+            throw new Exception("Context was not initialized! PreSPTLoader either did not run or was handed a different Context instance - check that Context is registered as [Injectable(InjectionType.Singleton)].");
         }
 
         var logWrapper = new LoggerWrapper<PostDBLoader>(logger);

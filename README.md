@@ -101,7 +101,35 @@ PreSPTLoader(..., QuestConfig questConfig, ...)
 | `Reward.TraderId` | `string` | `StringOrInt` |
 | 글로벌 config 타입 | `Eft.Common.Config` | `Spt.Tables.GlobalConfig` |
 
-### 6. 서버 — Ref 평판 패치가 async가 됨 (중요)
+### 6. 서버 — `[Injectable]` 기본 수명이 바뀜 (이게 서버를 죽였던 원인)
+
+이게 제일 안 보이는 함정이었습니다.
+
+| | 4.0 | 4.1 |
+| --- | --- | --- |
+| `[Injectable]` 기본값 | `InjectionType.Scoped` | **`InjectionType.Transient`** |
+
+`Scoped` 는 서버 기동 중엔 사실상 하나만 생기지만, `Transient` 는 **주입될 때마다 새 객체**를
+만듭니다. 이 모드는 `PreSPTLoader` 에서 설정을 읽어 `Context` 에 담고 `PostDBLoader` 에서 꺼내
+쓰는 구조라, 4.1에서는 서로 다른 `Context` 를 받게 되어 이렇게 죽습니다.
+
+```
+[Critical][SPTarkov.Server.Core] The server has unexpectedly stopped...
+System.Exception: Context was not initialized!
+   at GekosBetterProgression.PostDBLoader.OnLoadAsync(...)
+```
+
+`Context` 를 명시적으로 싱글톤으로 등록해서 해결했습니다.
+
+```csharp
+[Injectable(InjectionType.Singleton)]   // 4.0에선 [Injectable] 만으로 충분했음
+public class Context { ... }
+```
+
+> 4.0에서 넘어온 서버 모드 중 **로드 단계 사이에 상태를 넘기는 클래스**가 있다면 전부 같은 문제를
+> 겪습니다. 컴파일도 되고 경고도 안 뜨니 서버가 죽어야 알게 됩니다.
+
+### 7. 서버 — Ref 평판 패치가 async가 됨 (중요)
 
 `LocationLifecycleService.EndLocalRaid` 가 4.1에서 **`EndLocalRaidAsync`** 로 바뀌었습니다.
 async 메서드에 그냥 Postfix를 달면 **Task를 돌려주는 순간** 실행돼서, 레이드 결과가 프로필에
@@ -117,7 +145,7 @@ static void Postfix(ref Task __result, MongoId sessionId, EndLocalRaidRequestDat
 
 호출부가 우리 Task를 await 하므로, 평판이 반영된 뒤에 응답이 나갑니다.
 
-### 7. 정리한 것
+### 8. 정리한 것
 
 - 3.11 타입스크립트 시절 잔재 삭제: `package.json`, `package-lock.json`, `mod.code-workspace`
 - 클라 프로젝트를 구식 `.csproj`(`v4.7.1` + `postBuildEvent` 배치 스크립트)에서 **SDK 스타일
@@ -139,8 +167,13 @@ static void Postfix(ref Task __result, MongoId sessionId, EndLocalRaidRequestDat
 
 결과: **41/41 통과**.
 
+다만 이 하네스는 *클라이언트* 바인딩만 봅니다. 서버 쪽 DI 수명 문제(위 6번)는 어셈블리를 봐도
+알 수 없고 실제로 띄워봐야 나오는 종류라, 실기동 로그로 잡았습니다.
+
 ## 아직 확인 못한 것
 
+- 위 6번(`Context` 싱글톤)은 실기동 로그에서 잡은 원인을 고친 것이고, **고친 뒤 다시 띄워본 것은
+  아닙니다.** 재기동 확인 필요.
 - **인게임 테스트는 안 했습니다.** 아래는 오프라인에서 검증 불가능한 항목입니다.
 - 스킬 탭 UI는 `"Skill Icon"` / `"Level Panel"` / `"TopPanel"` / `"Progress Panel"` / `"Current Text"`
   같은 **게임오브젝트 이름**을 찾아 들어갑니다. BSG가 UI 계층을 바꿨다면 그 부분만 조용히 안 뜹니다.
