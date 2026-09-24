@@ -114,6 +114,52 @@ public class PreSPTLoader(
     }
 }
 
+/// <summary>
+/// Other mods can replace quest templates wholesale after PostDBLoader has run (e.g. quest data updaters at
+/// PostLoad + 1), which silently drops the rewards this mod added and leaves players without their secure
+/// containers. Re-check once everything else has loaded and put back whatever went missing.
+/// </summary>
+[Injectable(TypePriority = OnLoadOrder.PostLoad + 60000)]
+public class LateQuestRewardLoader(Context context, ISptLogger<LateQuestRewardLoader> logger) : IOnLoad
+{
+    public Task OnLoadAsync(CancellationToken cancellationToken = default)
+    {
+        if (!context.IsInitialized || context.tables is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        try
+        {
+            var cfg = context.config;
+            var groups = new List<(bool enabled, string name, AdvancedConfig.AdditionalQuestRewards rewards)>
+            {
+                (cfg.secureContainerProgression.enable, "secure container", context.advancedConfig.advancedSecureContainerChanges.additionalQuestRewards),
+                (cfg.misc.enableExtraQuestRewards, "additional", context.advancedConfig.additionalQuestRewards)
+            };
+
+            foreach (var (enabled, name, rewards) in groups.Where(g => g.enabled))
+            {
+                int missing = Utils.CountMissingQuestRewards(context, rewards);
+                if (missing == 0)
+                {
+                    logger.Info($"[Geko's Better Progression] All {name} quest rewards present after load");
+                    continue;
+                }
+
+                int restored = Utils.ApplyAdditionalQuestRewards(context, rewards);
+                logger.Warning($"[Geko's Better Progression] {missing} {name} quest reward(s) were removed by another mod after loading; restored {restored}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error($"[Geko's Better Progression] Failed to re-check quest rewards: {ex.Message}");
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
 // We want to load after PostDBModLoader is complete, so we set our type priority to that, plus 1.
 [Injectable(TypePriority = OnLoadOrder.TraderRegistration + 100)] //Load a fair bit after traders are registered, so that we can safely modify their assortments
 public class PostDBLoader(

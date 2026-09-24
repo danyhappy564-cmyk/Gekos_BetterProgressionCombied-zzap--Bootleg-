@@ -14,6 +14,29 @@
 
 ---
 
+## 변경 이력
+
+- 2026-09-24 21:50 (KST) — 시큐어 컨테이너 퀘스트 보상 보강. 피드백: Delivery from the Past → Alpha,
+  Setup → Beta, Network Provider - Part 1 수락 → Gamma 가 안 들어옴.
+  - 실제 SPT 4.1.6 서버에 이 모드만 올려 퀘스트를 수락/완료해 본 결과 **세 컨테이너 모두 우편으로 정상 지급됨** —
+    모드 단독으로는 재현되지 않았다.
+  - 대신 **다른 모드가 나중에 퀘스트 데이터를 통째로 덮어쓰면** 이 모드가 넣은 보상이 조용히 사라진다(로그 없음).
+    이제 서버 로딩이 거의 끝난 시점(`PostLoad + 60000`)에 한 번 더 확인해서, 사라졌으면 다시 넣는다.
+    테스트용 "보상 지우는 모드"를 같이 올려 복구 → 우편 지급까지 확인.
+  - 서버 로그에 결과가 남는다: `Added 3 secure container quest rewards`, 로딩 끝에
+    `All secure container quest rewards present after load`(정상) 또는
+    `... were removed by another mod after loading; restored N`(다른 모드가 지웠고 복구함).
+  - 설정에 적힌 퀘스트가 DB에 없으면 서버가 예외로 보상 추가 전체를 건너뛰던 것을, 그 퀘스트만 경고 후 건너뛰게 변경.
+    컨테이너 크기 변경이 실패해도 보상은 먼저 들어가도록 순서도 바꿈.
+  - 워크벤치 제작: 모드 적용 전/후 레시피 228개를 전부 비교했고 빠진 레시피는 없음. 탄약 제작 16개가 설정
+    (`algorithmicalRebalancing` → `ammoRules.craftSettings`)에 따라 **워크벤치 요구 레벨이 바뀌는 건 원작 설계**
+    (예: 9x18mm PBM 은 1→3 레벨로 올라감). 퀘스트로 해금되는 제작 7개가 안 풀리는 현상은 모드 없는
+    순정 서버에서도 똑같이 나와서 이 모드 문제가 아님.
+- 2026-09-11 — 저작권/면책 헤더 추가, 릴리즈 zip 빌드 타깃 추가.
+- 2026-09-08 — SPT 4.1.5 포팅 (아래 "4.1 포팅에서 바뀐 것" 참고).
+
+---
+
 # Gekos_BetterProgression Combined — SPT 4.1 포팅
 
 원작 **Geko's Better Progression** (DrunkGeko, 기여: marbL-) 을 **SPT 4.1.5** 로 포팅한 저장소입니다.

@@ -296,25 +296,63 @@ public static class Utils
     // QUEST / HIDEOUT
     // ---------------------------------------------
 
-    public static void ApplyAdditionalQuestRewards(Context context, AdditionalQuestRewards additionalQuestRewards)
+    /// <summary>
+    /// Adds the configured rewards to the quest templates. Safe to call more than once: a reward whose id is
+    /// already on the quest is skipped, so a late re-run only restores what another mod removed.
+    /// </summary>
+    /// <returns>How many rewards were added by this call.</returns>
+    public static int ApplyAdditionalQuestRewards(Context context, AdditionalQuestRewards additionalQuestRewards)
     {
-        DatabaseTablesView tables = context.tables;
-        var startedRewards = additionalQuestRewards.started;
-        var successRewards = additionalQuestRewards.success;
+        // these are not typos, the quest reward keys are capitalized
+        return AddQuestRewards(context, additionalQuestRewards.started, "Started")
+            + AddQuestRewards(context, additionalQuestRewards.success, "Success");
+    }
 
-        foreach (KeyValuePair<string, Reward> questIDToReward in startedRewards)
+    private static int AddQuestRewards(Context context, Dictionary<string, Reward> questIdToReward, string rewardKey)
+    {
+        int added = 0;
+
+        foreach (KeyValuePair<string, Reward> questIDToReward in questIdToReward)
         {
-            // this is not a typo, this one has a capitalized S
-            tables.Templates.Quests[questIDToReward.Key].Rewards.TryGetValue("Started", out List<Reward>? rewardList);
-            rewardList?.Add(questIDToReward.Value);
+            // One missing quest (removed by another mod, typo in config) must not take the other rewards down with it
+            if (!context.tables.Templates.Quests.TryGetValue(questIDToReward.Key, out Quest? quest))
+            {
+                context.logger.Warning($"Quest {questIDToReward.Key} not found, skipping its additional {rewardKey} reward");
+                continue;
+            }
+
+            if (quest.Rewards is null || !quest.Rewards.TryGetValue(rewardKey, out List<Reward>? rewardList) || rewardList is null)
+            {
+                context.logger.Warning($"Quest {questIDToReward.Key} has no {rewardKey} reward list, skipping its additional reward");
+                continue;
+            }
+
+            if (rewardList.Any(r => r.Id == questIDToReward.Value.Id))
+            {
+                continue;
+            }
+
+            rewardList.Add(questIDToReward.Value);
+            added++;
         }
 
-        foreach (KeyValuePair<string, Reward> questIDToReward in successRewards)
-        {
-            // this is not a typo, this one has a capitalized S
-            tables.Templates.Quests[questIDToReward.Key].Rewards.TryGetValue("Success", out List<Reward>? rewardList);
-            rewardList?.Add(questIDToReward.Value);
-        }
+        return added;
+    }
+
+    /// <summary>
+    /// Counts configured rewards that are not (or no longer) on their quest.
+    /// </summary>
+    public static int CountMissingQuestRewards(Context context, AdditionalQuestRewards additionalQuestRewards)
+    {
+        int CountMissing(Dictionary<string, Reward> questIdToReward, string rewardKey) =>
+            questIdToReward.Count(kv =>
+                !context.tables.Templates.Quests.TryGetValue(kv.Key, out Quest? quest)
+                || quest.Rewards is null
+                || !quest.Rewards.TryGetValue(rewardKey, out List<Reward>? list)
+                || list is null
+                || !list.Any(r => r.Id == kv.Value.Id));
+
+        return CountMissing(additionalQuestRewards.started, "Started") + CountMissing(additionalQuestRewards.success, "Success");
     }
 
     public static void LockBehindQuest(

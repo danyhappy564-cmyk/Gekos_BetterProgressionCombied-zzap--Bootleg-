@@ -6,8 +6,9 @@ public class SecureContainerChanges()
 {
     public static bool Apply(Context context)
     {
-        ApplySizeChanges(context);
+        // Rewards first: a failure in the grid changes must not cost players their containers
         ApplyAdditionalQuestRewards(context);
+        ApplySizeChanges(context);
         ApplyStarterContainer(context);
 
         return true;
@@ -15,7 +16,8 @@ public class SecureContainerChanges()
 
     public static void ApplyAdditionalQuestRewards(Context context)
     {
-        Utils.ApplyAdditionalQuestRewards(context, context.advancedConfig.advancedSecureContainerChanges.additionalQuestRewards);
+        int added = Utils.ApplyAdditionalQuestRewards(context, context.advancedConfig.advancedSecureContainerChanges.additionalQuestRewards);
+        context.logger.Info($"Added {added} secure container quest rewards");
     }
 
     public static void ApplySizeChanges(Context context)

@@ -4,8 +4,9 @@ public class AdditionalQuestRewardChanges
 {
     public static bool Apply(Context context)
     {
-        Utils.ApplyAdditionalQuestRewards(context, context.advancedConfig.additionalQuestRewards);
-        
+        int added = Utils.ApplyAdditionalQuestRewards(context, context.advancedConfig.additionalQuestRewards);
+        context.logger.Info($"Added {added} additional quest rewards");
+
         return true;
     }
 }
